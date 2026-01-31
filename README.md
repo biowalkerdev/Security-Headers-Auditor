@@ -23,7 +23,7 @@ This tool is very useful for pentesters
 - Colorama
 
 ## 🚀How to install
-Cloning repository
+Cloning repository  
 ```git clone https://github.com/biowalkerdev/Security-Headers-Auditor.git```
 
 ```cd Security-Headers-Auditor```
