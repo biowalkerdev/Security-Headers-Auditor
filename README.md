@@ -1,6 +1,6 @@
 # Security Headers Auditor
-What is this tool about?
-This tool scans websites for vulnerabilities such as CSP, HSTS, etc.
+What is this tool about?  
+This tool scans websites for vulnerabilities such as CSP, HSTS, etc.  
 This tool is very useful for pentesters
 ## ⭐Features
 - Recommendations how to upgrade security of your website
@@ -63,5 +63,5 @@ Now you can install dependencies
 ```bash install.req```
 
 ## Credits
-Made by: biowalkerdev
+Made by: biowalkerdev  
 Translated to english by: DeepSeek (AI)
