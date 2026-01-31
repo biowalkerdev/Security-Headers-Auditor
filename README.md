@@ -63,6 +63,10 @@ To fix this, create a virtual environment. Here's how:
 Now you can install dependencies  
 ```bash install_req.sh```
 
+## ⚠️Disclaimer
+Use only on sites you have permission to access.  
+Sites like example.com, httpbin.org, etc. can be scanned without permission
+
 ## Credits
 Made by: biowalkerdev  
 Translated to english by: DeepSeek (AI)
