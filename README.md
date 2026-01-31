@@ -28,7 +28,7 @@ Cloning repository
 
 ```cd Security-Headers-Auditor```
 
-# 📦Installing requirments:
+# 📦Installing Dependencies:
 On Linux: ```bash install_req.sh```
 
 On Windows: Open file install_req.bat
@@ -52,6 +52,15 @@ Timeout scan
 
 Custom User Agent
 ```python main.py --user-agent "Mozilla/5.0" https://example.com```
+
+## 🔧Troubleshooting
+While installing dependencies on linux there is can be error:  
+This environment is externally managed  
+To fix this, create a virtual environment. Here's how:  
+```python3 -m venv venv```  
+```source venv/bin/activate```  
+Now you can install dependencies  
+```bash install.req```
 
 ## Credits
 Made by: biowalkerdev
