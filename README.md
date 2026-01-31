@@ -61,7 +61,7 @@ To fix this, create a virtual environment. Here's how:
 ```python3 -m venv venv```  
 ```source venv/bin/activate```  
 Now you can install dependencies  
-```bash install.req```
+```bash install_req.sh```
 
 ## Credits
 Made by: biowalkerdev  
