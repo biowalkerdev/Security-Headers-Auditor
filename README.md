@@ -52,3 +52,7 @@ Timeout scan
 
 Custom User Agent
 ```python main.py --user-agent "Mozilla/5.0" https://example.com```
+
+## Credits
+Made by: biowalkerdev
+Translated to english by: DeepSeek (AI)
