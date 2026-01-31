@@ -37,20 +37,20 @@ On Windows: Open file install_req.bat
 Basic scan:
 ```python3 main.py example.com```
 
-Timeout Scan
+Timeout Scan:
 ```python3 main.py --timeout 30 https://example.com```
 
-Custom User Agent
+Custom User Agent:
 ```python3 main.py --user-agent "Mozilla/5.0" https://example.com```
 
 ## Usage (Windows)
 Basic scan:
 ```python main.py example.com```
 
-Timeout scan
+Timeout scan:
 ```python main.py --timeout 30 https://example.com```
 
-Custom User Agent
+Custom User Agent:
 ```python main.py --user-agent "Mozilla/5.0" https://example.com```
 
 ## 🔧Troubleshooting
