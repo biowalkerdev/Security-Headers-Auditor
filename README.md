@@ -17,8 +17,38 @@ This tool is very useful for pentesters
   - Server Information
 - Color-coded terminal output
 
-## 🚀How to install
+## Requirments
+- Python 3
+- Requests
+- Colorama
 
+## 🚀How to install
+Cloning repository
 ```git clone https://github.com/biowalkerdev/Security-Headers-Auditor.git```
 
 ```cd Security-Headers-Auditor```
+
+# 📦Installing requirments:
+On Linux: ```bash install_req.sh```
+
+On Windows: Open file install_req.bat
+
+## Usage (Linux)
+# Basic scan:
+```python3 main.py example.com```
+
+# Timeout Scan
+```python3 main.py --timeout 30 https://example.com```
+
+# Custom User Agent
+```python3 main.py --user-agent "Mozilla/5.0" https://example.com```
+
+## Usage (Windows)
+# Basic scan:
+```python main.py example.com```
+
+# Timeout scan
+```python main.py --timeout 30 https://example.com```
+
+# Custom User Agent
+```python main.py --user-agent "Mozilla/5.0" https://example.com```
