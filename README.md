@@ -19,5 +19,6 @@ This tool is very useful for pentesters
 
 ## 🚀How to install
 
-```git clone https://github.com/biowalkerdev/Security-Headers-Auditor.git``` \n
+```git clone https://github.com/biowalkerdev/Security-Headers-Auditor.git```
+
 ```cd Security-Headers-Auditor```
