@@ -1,5 +1,6 @@
 # Security Headers Auditor
 <img src=https://camo.githubusercontent.com/ac0e6350bd1a747fd6c3ffa64781612d3997df0c837a082a30d7af82a79ee225/68747470733a2f2f696d672e736869656c64732e696f2f62616467652f76657273696f6e2d312e302d626c7565> <img src=https://camo.githubusercontent.com/7013272bd27ece47364536a221edb554cd69683b68a46fc0ee96881174c4214c/68747470733a2f2f696d672e736869656c64732e696f2f62616467652f6c6963656e73652d4d49542d626c75652e737667>  
+[![Version](https://img.shields.io/badge/version-1.0.0-blue)](https://github.com/biowalkerdev/Security-Headers-Auditor)  
 What is this tool about?  
 This tool scans websites for vulnerabilities such as CSP, HSTS, etc.  
 This tool is very useful for pentesters
