@@ -29,7 +29,7 @@ Cloning repository
 
 ```cd Security-Headers-Auditor```
 
-# 📦Installing Dependencies:
+## 📦Installing Dependencies
 On Linux: ```bash install_req.sh```
 
 On Windows: Open file install_req.bat
