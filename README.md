@@ -1,11 +1,12 @@
 # Security Headers Auditor
-[![Version](https://img.shields.io/badge/version-1.0-blue)](https://github.com/biowalkerdev/Security-Headers-Auditor) <img src=https://camo.githubusercontent.com/7013272bd27ece47364536a221edb554cd69683b68a46fc0ee96881174c4214c/68747470733a2f2f696d672e736869656c64732e696f2f62616467652f6c6963656e73652d4d49542d626c75652e737667>  
+[![Version](https://img.shields.io/badge/version-1.1-blue)](https://github.com/biowalkerdev/Security-Headers-Auditor) <img src=https://camo.githubusercontent.com/7013272bd27ece47364536a221edb554cd69683b68a46fc0ee96881174c4214c/68747470733a2f2f696d672e736869656c64732e696f2f62616467652f6c6963656e73652d4d49542d626c75652e737667>  
 What is this tool about?  
 This tool scans websites for vulnerabilities such as CSP, HSTS, etc.  
 This tool is very useful for pentesters
 ## ⭐Features
 - Recommendations how to upgrade security of your website
 - A-F Ratings
+- JSON Reports
 - 9 Security Headers:
   - Content-Security-Policy (CSP)
   - Strict-Transport-Security (HSTS)
@@ -44,6 +45,11 @@ Timeout Scan:
 Custom User Agent:
 ```python3 main.py --user-agent "Mozilla/5.0" https://example.com```
 
+Scan with JSON report:
+```python3 main.py --json https://example.com```  
+JSON report with your own file name:  
+```python3 main.py --json --output yourown_filename.json https://example.com```
+
 ## Usage (Windows)
 Basic scan:
 ```python main.py example.com```
@@ -53,6 +59,11 @@ Timeout scan:
 
 Custom User Agent:
 ```python main.py --user-agent "Mozilla/5.0" https://example.com```
+
+Scan with JSON report:
+```python main.py --json https://example.com```  
+JSON report with your own file name:  
+```python main.py --json --output yourown_filename.json https://example.com```
 
 ## 🔧Troubleshooting
 While installing dependencies on linux there is can be error:  

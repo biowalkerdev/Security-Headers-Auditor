@@ -6,9 +6,11 @@ Security Headers Auditor
 import sys
 import requests
 import argparse
+import json
 from datetime import datetime
 from urllib.parse import urlparse
 from colorama import init, Fore, Back, Style
+import os
 
 # Initialize colored output
 init(autoreset=True)
@@ -17,7 +19,7 @@ class SecurityHeadersAuditor:
     def __init__(self, url, timeout=10, user_agent=None):
         self.url = self.normalize_url(url)
         self.timeout = timeout
-        self.user_agent = user_agent or "Security-Headers-Auditor/1.0"
+        self.user_agent = user_agent or "Security-Headers-Auditor/1.1"
         self.headers = {}
         self.results = {}
         
@@ -80,18 +82,15 @@ class SecurityHeadersAuditor:
             status = "PRESENT"
             details = []
             
-            # Check for important directives
             directives = ['default-src', 'script-src', 'style-src', 'img-src', 'object-src']
             for directive in directives:
                 if directive in csp.lower():
                     details.append(f"✓ {directive}")
             
-            # Check for unsafe-inline/unsafe-eval
             if "'unsafe-inline'" not in csp and "'unsafe-eval'" not in csp:
                 score += 1
                 details.append("✓ Safe policy (no unsafe-inline/eval)")
             
-            # Check object-src
             if "'none'" in self.get_directive_value(csp, 'object-src'):
                 score += 1
                 details.append("✓ object-src 'none' (protection against Flash/Java)")
@@ -170,16 +169,14 @@ class SecurityHeadersAuditor:
             status = "PRESENT"
             details = []
             
-            # Check parameters
             hsts_lower = hsts.lower()
             if 'max-age=' in hsts_lower:
                 details.append("✓ max-age set")
-                # Extract max-age value
                 import re
                 match = re.search(r'max-age=(\d+)', hsts_lower)
                 if match:
                     max_age = int(match.group(1))
-                    if max_age >= 31536000:  # 1 year
+                    if max_age >= 31536000:
                         score += 1
                         details.append(f"✓ Long max-age: {max_age} seconds")
             
@@ -238,7 +235,6 @@ class SecurityHeadersAuditor:
             score = 2
             status = "PRESENT"
             details = ["✓ Permissions policy configured"]
-            # Can add detailed analysis of specific features
         else:
             score = 0
             status = "MISSING"
@@ -318,15 +314,11 @@ class SecurityHeadersAuditor:
     
     def calculate_total_score(self):
         """Calculate total score"""
-        max_score = sum(item['score'] for item in self.results.values())
         actual_score = sum(item['score'] for item in self.results.values())
-        
-        # Maximum possible score (approximate)
         max_possible = 25
         
         percentage = (actual_score / max_possible) * 100 if max_possible > 0 else 0
         
-        # Letter grade
         if percentage >= 90:
             grade = "A"
             color = Fore.GREEN
@@ -360,7 +352,6 @@ class SecurityHeadersAuditor:
         print(f"{Fore.WHITE}Audit Time: {Fore.GREEN}{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
         print(f"{Fore.CYAN}{'-'*60}")
         
-        # Print results for each header
         for header_name, result in self.results.items():
             status_color = {
                 'SECURE': Fore.GREEN,
@@ -378,7 +369,6 @@ class SecurityHeadersAuditor:
             for detail in result['details']:
                 print(f"  {detail}")
         
-        # Total score
         total = self.calculate_total_score()
         print(f"\n{Fore.CYAN}{'-'*60}")
         print(f"{Fore.YELLOW}OVERALL SECURITY SCORE: {total['color']}{total['score']}/{total['max_possible']} "
@@ -386,7 +376,6 @@ class SecurityHeadersAuditor:
         print(f"{Fore.YELLOW}SECURITY GRADE: {total['color']}{total['grade']}")
         print(f"{Fore.CYAN}{'='*60}")
         
-        # Recommendations
         print(f"\n{Fore.YELLOW}RECOMMENDATIONS:")
         recommendations = []
         
@@ -407,6 +396,57 @@ class SecurityHeadersAuditor:
         
         for i, rec in enumerate(recommendations, 1):
             print(f"  {i}. {rec}")
+    
+    def export_to_json(self, output_file=None):
+        """Export results to JSON file"""
+        if not output_file:
+            # Generate filename: json-report-YYYY-MM-DD-HH-MM-SS.json
+            timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+            output_file = f"json-report-{timestamp}.json"
+        
+        report_data = {
+            "audit_info": {
+                "url": self.url,
+                "audit_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                "tool_version": "1.1.0"
+            },
+            "headers_found": {},
+            "security_score": self.calculate_total_score(),
+            "detailed_results": {}
+        }
+        
+        # Add all found headers
+        for header, value in self.headers.items():
+            report_data["headers_found"][header] = value
+        
+        # Add security analysis results
+        for header_name, result in self.results.items():
+            report_data["detailed_results"][header_name] = {
+                "status": result["status"],
+                "score": result["score"],
+                "value": result["value"],
+                "details": result["details"]
+            }
+        
+        # Add recommendations
+        report_data["recommendations"] = []
+        if self.results['Content-Security-Policy']['status'] == 'MISSING':
+            report_data["recommendations"].append("Add Content-Security-Policy for XSS protection")
+        if self.results['Strict-Transport-Security']['status'] == 'MISSING':
+            report_data["recommendations"].append("Add Strict-Transport-Security for forced HTTPS")
+        if self.results['X-Frame-Options']['status'] == 'MISSING':
+            report_data["recommendations"].append("Add X-Frame-Options: DENY for clickjacking protection")
+        if self.results['X-Content-Type-Options']['status'] == 'MISSING':
+            report_data["recommendations"].append("Add X-Content-Type-Options: nosniff")
+        
+        # Write to file
+        try:
+            with open(output_file, 'w', encoding='utf-8') as f:
+                json.dump(report_data, f, indent=2, ensure_ascii=False)
+            return output_file
+        except Exception as e:
+            print(f"{Fore.RED}Error exporting to JSON: {e}")
+            return None
 
 def main():
     parser = argparse.ArgumentParser(
@@ -416,6 +456,7 @@ def main():
 Usage examples:
   python3 main.py https://example.com
   python3 main.py example.com
+  python3 main.py --json https://example.com
   python3 main.py --timeout 15 https://google.com
         """
     )
@@ -424,6 +465,9 @@ Usage examples:
     parser.add_argument('--timeout', type=int, default=10, 
                        help='Request timeout in seconds (default: 10)')
     parser.add_argument('--user-agent', help='Custom User-Agent')
+    parser.add_argument('--json', action='store_true', 
+                       help='Export results to JSON file')
+    parser.add_argument('--output', help='Custom output JSON filename')
     
     if len(sys.argv) == 1:
         parser.print_help()
@@ -443,7 +487,20 @@ Usage examples:
     
     if auditor.fetch_headers():
         auditor.audit_security_headers()
-        auditor.print_report()
+        
+        if args.json:
+            # Export to JSON
+            output_file = auditor.export_to_json(args.output)
+            if output_file:
+                print(f"{Fore.GREEN}✅ Report saved to: {output_file}")
+                print(f"{Fore.CYAN}📊 You can also view the text report below:")
+                auditor.print_report()
+            else:
+                print(f"{Fore.RED}❌ Failed to save JSON report")
+                auditor.print_report()
+        else:
+            # Just print report
+            auditor.print_report()
     else:
         print(f"{Fore.RED}Failed to fetch data from the website")
         sys.exit(1)
