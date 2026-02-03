@@ -7,21 +7,91 @@ import sys
 import requests
 import argparse
 import json
+import os
+import time
 from datetime import datetime
 from urllib.parse import urlparse
 from colorama import init, Fore, Back, Style
-import os
 
 # Initialize colored output
 init(autoreset=True)
 
+# Cache configuration
+CACHE_DIR = "cache"
+
+def ensure_cache_dir():
+    """Create cache directory if it doesn't exist"""
+    if not os.path.exists(CACHE_DIR):
+        os.makedirs(CACHE_DIR)
+
+def get_cache_filename(url):
+    """Convert URL to cache filename"""
+    # Normalize URL first
+    if not url.startswith(('http://', 'https://')):
+        url = 'https://' + url
+    
+    parsed = urlparse(url)
+    domain = parsed.netloc if parsed.netloc else parsed.path
+    # Remove www. for consistency
+    if domain.startswith('www.'):
+        domain = domain[4:]
+    # Replace dots with underscores and remove special chars
+    filename = domain.replace('.', '_').replace(':', '_').replace('/', '_')
+    # Remove trailing underscores
+    filename = filename.rstrip('_')
+    return f"{filename}.json"
+
+def save_to_cache(url, data):
+    """Save scan results to cache"""
+    ensure_cache_dir()
+    cache_file = os.path.join(CACHE_DIR, get_cache_filename(url))
+    
+    cache_data = {
+        "url": url,
+        "scan_timestamp": datetime.now().isoformat(),
+        "results": data
+    }
+    
+    try:
+        with open(cache_file, 'w', encoding='utf-8') as f:
+            json.dump(cache_data, f, indent=2, ensure_ascii=False)
+        return True
+    except Exception as e:
+        print(f"{Fore.YELLOW}⚠ Could not save to cache: {e}")
+        return False
+
+def load_from_cache(url):
+    """Load scan results from cache"""
+    cache_file = os.path.join(CACHE_DIR, get_cache_filename(url))
+    
+    if not os.path.exists(cache_file):
+        return None
+    
+    try:
+        with open(cache_file, 'r', encoding='utf-8') as f:
+            cache_data = json.load(f)
+        return cache_data["results"]
+    except Exception as e:
+        print(f"{Fore.YELLOW}⚠ Corrupted cache file: {e}")
+        return None
+
+def clear_cache():
+    """Clear all cache files"""
+    if os.path.exists(CACHE_DIR):
+        import shutil
+        shutil.rmtree(CACHE_DIR)
+        print(f"{Fore.GREEN}✅ Cache cleared")
+        return True
+    return False
+
 class SecurityHeadersAuditor:
-    def __init__(self, url, timeout=10, user_agent=None):
+    def __init__(self, url, timeout=10, user_agent=None, use_cache=False):
         self.url = self.normalize_url(url)
         self.timeout = timeout
-        self.user_agent = user_agent or "Security-Headers-Auditor/1.1"
+        self.user_agent = user_agent or "Security-Headers-Auditor/1.2"
         self.headers = {}
         self.results = {}
+        self.use_cache = use_cache
         
     def normalize_url(self, url):
         """Normalize URL"""
@@ -44,6 +114,19 @@ class SecurityHeadersAuditor:
         except requests.exceptions.RequestException as e:
             print(f"{Fore.RED}Error fetching data: {e}")
             return False
+    
+    def audit(self, from_cache=False):
+        """Perform audit (or load from cache)"""
+        if from_cache:
+            print(f"{Fore.YELLOW}📁 Loading from cache...")
+            return True
+            
+        print(f"{Fore.CYAN}⏳ Fetching headers...")
+        if not self.fetch_headers():
+            return False
+            
+        self.audit_security_headers()
+        return True
     
     def check_header_exists(self, header_name):
         """Check if header exists"""
@@ -400,7 +483,6 @@ class SecurityHeadersAuditor:
     def export_to_json(self, output_file=None):
         """Export results to JSON file"""
         if not output_file:
-            # Generate filename: json-report-YYYY-MM-DD-HH-MM-SS.json
             timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
             output_file = f"json-report-{timestamp}.json"
         
@@ -408,18 +490,16 @@ class SecurityHeadersAuditor:
             "audit_info": {
                 "url": self.url,
                 "audit_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                "tool_version": "1.1.0"
+                "tool_version": "1.2.0"
             },
             "headers_found": {},
             "security_score": self.calculate_total_score(),
             "detailed_results": {}
         }
         
-        # Add all found headers
         for header, value in self.headers.items():
             report_data["headers_found"][header] = value
         
-        # Add security analysis results
         for header_name, result in self.results.items():
             report_data["detailed_results"][header_name] = {
                 "status": result["status"],
@@ -428,7 +508,6 @@ class SecurityHeadersAuditor:
                 "details": result["details"]
             }
         
-        # Add recommendations
         report_data["recommendations"] = []
         if self.results['Content-Security-Policy']['status'] == 'MISSING':
             report_data["recommendations"].append("Add Content-Security-Policy for XSS protection")
@@ -439,7 +518,6 @@ class SecurityHeadersAuditor:
         if self.results['X-Content-Type-Options']['status'] == 'MISSING':
             report_data["recommendations"].append("Add X-Content-Type-Options: nosniff")
         
-        # Write to file
         try:
             with open(output_file, 'w', encoding='utf-8') as f:
                 json.dump(report_data, f, indent=2, ensure_ascii=False)
@@ -448,20 +526,149 @@ class SecurityHeadersAuditor:
             print(f"{Fore.RED}Error exporting to JSON: {e}")
             return None
 
+def batch_scan(file_path, use_cache=False, timeout=10, user_agent=None, export_json=False):
+    """Perform batch scan from file"""
+    if not os.path.exists(file_path):
+        print(f"{Fore.RED}Error: File '{file_path}' not found")
+        return False
+    
+    try:
+        with open(file_path, 'r') as f:
+            urls = [line.strip() for line in f if line.strip()]
+    except Exception as e:
+        print(f"{Fore.RED}Error reading file: {e}")
+        return False
+    
+    if not urls:
+        print(f"{Fore.YELLOW}No URLs found in file")
+        return False
+    
+    print(f"{Fore.CYAN}🔍 Starting batch scan of {len(urls)} sites...")
+    print(f"{Fore.CYAN}📁 Cache mode: {'ON' if use_cache else 'OFF'}")
+    
+    results = []
+    start_time = time.time()
+    
+    for i, url in enumerate(urls, 1):
+        print(f"\n{Fore.CYAN}[{i}/{len(urls)}] Scanning: {url}")
+        
+        # Try to load from cache if enabled
+        cached_results = None
+        if use_cache:
+            cached_results = load_from_cache(url)
+        
+        if cached_results:
+            print(f"{Fore.YELLOW}   📁 Using cached results")
+            auditor = SecurityHeadersAuditor(url, timeout, user_agent, use_cache)
+            auditor.results = cached_results
+            results.append(auditor)
+        else:
+            auditor = SecurityHeadersAuditor(url, timeout, user_agent, use_cache)
+            if auditor.audit():
+                results.append(auditor)
+                if use_cache:
+                    # Save to cache
+                    save_to_cache(url, auditor.results)
+            else:
+                print(f"{Fore.RED}   ❌ Failed to scan")
+    
+    end_time = time.time()
+    duration = end_time - start_time
+    
+    # Summary
+    print(f"\n{Fore.GREEN}{'='*60}")
+    print(f"{Fore.YELLOW}✅ BATCH SCAN COMPLETED")
+    print(f"{Fore.GREEN}{'='*60}")
+    print(f"{Fore.CYAN}📊 Summary:")
+    print(f"  • Total sites: {len(urls)}")
+    print(f"  • Successfully scanned: {len(results)}")
+    print(f"  • Failed: {len(urls) - len(results)}")
+    print(f"  • Total time: {duration:.1f} seconds")
+    print(f"  • Average time per site: {duration/len(urls):.1f} seconds" if results else "")
+    
+    if results:
+        # Calculate overall statistics
+        scores = [a.calculate_total_score()['score'] for a in results]
+        avg_score = sum(scores) / len(scores) if scores else 0
+        
+        grades = {'A': 0, 'B': 0, 'C': 0, 'D': 0, 'F': 0}
+        for a in results:
+            grade = a.calculate_total_score()['grade']
+            grades[grade] = grades.get(grade, 0) + 1
+        
+        print(f"\n{Fore.CYAN}📈 Security Statistics:")
+        print(f"  • Average score: {avg_score:.1f}/25")
+        print(f"  • Grade distribution:")
+        for grade, count in grades.items():
+            if count > 0:
+                print(f"      {grade}: {count} sites")
+    
+    # Export batch results to JSON if requested
+    if export_json:
+        batch_report = {
+            "batch_info": {
+                "total_sites": len(urls),
+                "successful_scans": len(results),
+                "failed_scans": len(urls) - len(results),
+                "scan_duration": f"{duration:.1f}s",
+                "cache_used": use_cache,
+                "scan_time": datetime.now().isoformat()
+            },
+            "sites": []
+        }
+        
+        for auditor in results:
+            site_report = {
+                "url": auditor.url,
+                "score": auditor.calculate_total_score()['score'],
+                "grade": auditor.calculate_total_score()['grade'],
+                "headers_found": {h: v for h, v in auditor.headers.items()}
+            }
+            batch_report["sites"].append(site_report)
+        
+        batch_file = f"batch-report-{datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}.json"
+        try:
+            with open(batch_file, 'w', encoding='utf-8') as f:
+                json.dump(batch_report, f, indent=2, ensure_ascii=False)
+            print(f"\n{Fore.GREEN}📁 Batch report saved to: {batch_file}")
+        except Exception as e:
+            print(f"{Fore.RED}Error saving batch report: {e}")
+    
+    print(f"\n{Fore.YELLOW}💡 Tip: Use --cache for faster repeated scans")
+    return True
+
 def main():
     parser = argparse.ArgumentParser(
-        description='Security Headers Auditor - security headers auditing tool',
+        description='Security Headers Auditor v1.2 - Batch Scanning & Caching',
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
-Usage examples:
-  python3 main.py https://example.com
-  python3 main.py example.com
-  python3 main.py --json https://example.com
-  python3 main.py --timeout 15 https://google.com
+Examples:
+  Single site scan:
+    python main.py https://example.com
+  
+  Single site with cache:
+    python main.py --cache https://example.com
+  
+  Batch scan without cache:
+    python main.py --batch urls.txt
+  
+  Batch scan with cache:
+    python main.py --batch urls.txt --cache
+  
+  Export to JSON:
+    python main.py --json https://example.com
+  
+  Clear cache:
+    python main.py --clear-cache
         """
     )
     
-    parser.add_argument('url', help='Website URL to audit')
+    parser.add_argument('url', nargs='?', help='Website URL to audit')
+    parser.add_argument('--batch', metavar='FILE', help='Batch scan from file with URLs')
+    parser.add_argument('--cache', action='store_true', 
+                       help='Use cache for faster scanning (saves/loads results)')
+    parser.add_argument('--clear-cache', action='store_true', 
+                       help='Clear all cached results')
     parser.add_argument('--timeout', type=int, default=10, 
                        help='Request timeout in seconds (default: 10)')
     parser.add_argument('--user-agent', help='Custom User-Agent')
@@ -469,41 +676,66 @@ Usage examples:
                        help='Export results to JSON file')
     parser.add_argument('--output', help='Custom output JSON filename')
     
-    if len(sys.argv) == 1:
+    args = parser.parse_args()
+    
+    # Handle clear-cache command
+    if args.clear_cache:
+        clear_cache()
+        sys.exit(0)
+    
+    # Handle batch scan
+    if args.batch:
+        success = batch_scan(
+            args.batch, 
+            use_cache=args.cache,
+            timeout=args.timeout,
+            user_agent=args.user_agent,
+            export_json=args.json
+        )
+        sys.exit(0 if success else 1)
+    
+    # Handle single URL scan
+    if not args.url:
+        print(f"{Fore.RED}Error: URL is required for single site scan")
         parser.print_help()
         sys.exit(1)
     
-    args = parser.parse_args()
+    print(f"{Fore.CYAN}🔍 Security analysis for: {Fore.GREEN}{args.url}")
     
-    # Create auditor
+    # Try to load from cache if enabled
+    cached_results = None
+    if args.cache:
+        cached_results = load_from_cache(args.url)
+    
     auditor = SecurityHeadersAuditor(
         url=args.url,
         timeout=args.timeout,
-        user_agent=args.user_agent
+        user_agent=args.user_agent,
+        use_cache=args.cache
     )
     
-    print(f"{Fore.CYAN}🔍 Security analysis for: {Fore.GREEN}{args.url}")
-    print(f"{Fore.CYAN}⏳ Fetching headers...")
-    
-    if auditor.fetch_headers():
-        auditor.audit_security_headers()
-        
-        if args.json:
-            # Export to JSON
-            output_file = auditor.export_to_json(args.output)
-            if output_file:
-                print(f"{Fore.GREEN}✅ Report saved to: {output_file}")
-                print(f"{Fore.CYAN}📊 You can also view the text report below:")
-                auditor.print_report()
-            else:
-                print(f"{Fore.RED}❌ Failed to save JSON report")
-                auditor.print_report()
-        else:
-            # Just print report
-            auditor.print_report()
+    if cached_results:
+        # Load from cache
+        auditor.results = cached_results
+        auditor.print_report()
+        print(f"\n{Fore.YELLOW}📁 Results loaded from cache")
     else:
-        print(f"{Fore.RED}Failed to fetch data from the website")
-        sys.exit(1)
+        # Perform fresh audit
+        if auditor.audit():
+            auditor.print_report()
+            # Save to cache if enabled
+            if args.cache:
+                save_to_cache(args.url, auditor.results)
+                print(f"\n{Fore.GREEN}📁 Results saved to cache")
+        else:
+            print(f"{Fore.RED}Failed to fetch data from the website")
+            sys.exit(1)
+    
+    # Export to JSON if requested
+    if args.json:
+        output_file = auditor.export_to_json(args.output)
+        if output_file:
+            print(f"{Fore.GREEN}📁 JSON report saved to: {output_file}")
 
 if __name__ == "__main__":
     main()

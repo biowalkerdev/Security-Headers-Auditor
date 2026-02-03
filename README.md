@@ -7,6 +7,8 @@ This tool is very useful for pentesters
 - Recommendations how to upgrade security of your website
 - A-F Ratings
 - JSON Reports
+- Caching Results
+- Batch Scanning
 - 9 Security Headers:
   - Content-Security-Policy (CSP)
   - Strict-Transport-Security (HSTS)
@@ -50,6 +52,14 @@ Scan with JSON report:
 JSON report with your own file name:  
 ```python3 main.py --json --output yourown_filename.json https://example.com```
 
+Caching Results:
+```python3 main.py --cache https://example.com```
+Clear cache:
+```python3 main.py --clear-cache```
+
+Batch Scanning:
+```python3 main.py --batch filename.txt```
+
 ## Usage (Windows)
 Basic scan:
 ```python main.py example.com```
@@ -64,6 +74,14 @@ Scan with JSON report:
 ```python main.py --json https://example.com```  
 JSON report with your own file name:  
 ```python main.py --json --output yourown_filename.json https://example.com```
+
+Caching Results:
+```python main.py --cache https://example.com```
+Clear cache:
+```python main.py --clear-cache```
+
+Batch Scanning:
+```python main.py --batch filename.txt```
 
 ## 🔧Troubleshooting
 While installing dependencies on linux there is can be error:  
