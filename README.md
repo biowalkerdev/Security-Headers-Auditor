@@ -1,25 +1,39 @@
 # Security Headers Auditor
-[![Version](https://img.shields.io/badge/version-1.2-blue)](https://github.com/biowalkerdev/Security-Headers-Auditor) <img src=https://camo.githubusercontent.com/7013272bd27ece47364536a221edb554cd69683b68a46fc0ee96881174c4214c/68747470733a2f2f696d672e736869656c64732e696f2f62616467652f6c6963656e73652d4d49542d626c75652e737667>  
+[![Version](https://img.shields.io/badge/version-1.3-blue)](https://github.com/biowalkerdev/Security-Headers-Auditor) <img src=https://camo.githubusercontent.com/7013272bd27ece47364536a221edb554cd69683b68a46fc0ee96881174c4214c/68747470733a2f2f696d672e736869656c64732e696f2f62616467652f6c6963656e73652d4d49542d626c75652e737667>  
 What is this tool about?  
 This tool scans websites for vulnerabilities such as CSP, HSTS, etc.  
 This tool is very useful for pentesters
 ## ⭐Features
-- Recommendations how to upgrade security of your website
-- A-F Ratings
+- 17 Security Headers Analysis:
+   - Content-Security-Policy (CSP)
+   - Strict-Transport-Security (HSTS)
+   - X-Frame-Options
+   - X-Content-Type-Options
+   - Referrer-Policy
+   - Permissions-Policy
+   - X-XSS-Protection
+   - Cache-Control
+   - Server Information
+   - Expect-CT
+   - Cross-Origin-Opener-Policy (COOP)
+   - Cross-Origin-Embedder-Policy (COEP)
+   - Cross-Origin-Resource-Policy (CORP)
+   - Report-To / Report-URI
+   - Content-Type
+   - Cookies Security Analysis
+   - Cross-Origin Policies
+- Advanced CSP Analysis with directive parsing and unsafe rule detection
+- Cookies Security Audit checking Secure, HttpOnly, and SameSite flags
+- A-F Security Ratings with percentage scores
+- Priority-based Recommendations (HIGH, MEDIUM, LOW, INFO)
 - JSON Reports
-- Caching Results
+- Results Caching
 - Batch Scanning
-- 9 Security Headers:
-  - Content-Security-Policy (CSP)
-  - Strict-Transport-Security (HSTS)
-  - X-Frame-Options
-  - X-Content-Type-Options
-  - Referrer-Policy
-  - Permissions-Policy
-  - X-XSS-Protection
-  - Cache-Control
-  - Server Information
-- Color-coded terminal output
+- Color-coded Terminal Output
+- Smart Retry System
+- Error Diagnostics with specific details
+- Timeout Handling
+- Edge-case Protection
 
 ## Requirments
 - Python 3
